@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask
+instance/
+.webassets-cache
+
+# Config files with sensitive data
+config.ini
+
+# Uploads and temporary files
+uploads/
+*.log
+*.md
+response.md
+file_analysis.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Selenium
+msedgedriver.exe
+chromedriver.exe
+
+# Certificates
+*.crt
+*.pem
+*.key

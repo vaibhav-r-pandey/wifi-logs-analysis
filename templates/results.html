@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results - IFX MSD GenAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .analysis-content {
+            line-height: 1.8;
+            color: #333;
+        }
+        
+        .analysis-content h1, .analysis-content h2, .analysis-content h3 {
+            color: #667eea;
+            margin: 30px 0 15px 0;
+            font-weight: 600;
+        }
+        
+        .analysis-content h1 {
+            font-size: 2em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .analysis-content h2 {
+            font-size: 1.5em;
+            margin-top: 40px;
+        }
+        
+        .analysis-content h3 {
+            font-size: 1.2em;
+            margin-top: 25px;
+        }
+        
+        .analysis-content p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .analysis-content ul, .analysis-content ol {
+            margin: 15px 0 15px 30px;
+        }
+        
+        .analysis-content li {
+            margin-bottom: 8px;
+        }
+        
+        .analysis-content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+        
+        .analysis-content pre {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .analysis-content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #666;
+        }
+        
+        .back-button {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            transition: transform 0.2s ease;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .metadata {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .metadata h3 {
+            color: #667eea !important;
+            margin-top: 0 !important;
+        }
+        
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analysis Results</h1>
+            <p>AI-powered log analysis and insights</p>
+        </div>
+        
+        <div class="content">
+            <a href="/" class="back-button">← New Analysis</a>
+            
+            <div class="metadata">
+                <h3>Analysis Information</h3>
+                <p><strong>Type:</strong> {{ analysis_type }}</p>
+                <p><strong>Generated:</strong> <span class="timestamp">{{ timestamp }}</span></p>
+            </div>
+            
+            <div class="analysis-content">
+                {{ analysis_html|safe }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
