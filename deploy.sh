@@ -11,7 +11,16 @@ mkdir -p uploads logs
 if [ ! -f "config.ini" ]; then
     echo "Creating config.ini from template..."
     cp config_template.ini config.ini
-    echo "Please edit config.ini with your credentials before running the application"
+    echo "IMPORTANT: Edit config.ini with your GPT4IFX credentials before running!"
+    echo "Required fields: username, password"
+fi
+
+# Validate config file
+if [ -f "config.ini" ]; then
+    if ! grep -q "\[gpt4ifxapi\]" config.ini; then
+        echo "ERROR: config.ini missing [gpt4ifxapi] section"
+        exit 1
+    fi
 fi
 
 # Install Python dependencies
