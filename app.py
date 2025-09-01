@@ -54,14 +54,18 @@ def handle_post():
         analysis = logs_analysis_genai.run_analysis(msdcaseurl)
         
         # Read the analysis results
-        response_file = f'logs/response_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md'
         try:
             with open('response.md', 'r', encoding='utf-8') as f:
                 markdown_content = f.read()
             
-            # Backup the response
-            with open(response_file, 'w', encoding='utf-8') as f:
-                f.write(markdown_content)
+            # Backup the response to temp directory
+            try:
+                response_file = os.path.join(tempfile.gettempdir(), f'response_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md')
+                with open(response_file, 'w', encoding='utf-8') as f:
+                    f.write(markdown_content)
+                logger.info(f'Response saved to: {response_file}')
+            except:
+                logger.warning('Could not save response file - continuing without saving')
                 
         except FileNotFoundError:
             logger.error('Response file not found')
@@ -123,10 +127,14 @@ def handle_file_upload():
         # Get analysis from AI
         output = test.test_chat_completion_api(analysis_input)
         
-        # Save analysis to file
-        analysis_file = f'logs/file_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md'
-        with open(analysis_file, 'w', encoding='utf-8') as f:
-            f.write(output)
+        # Save analysis to temp file (optional - for debugging)
+        try:
+            analysis_file = os.path.join(tempfile.gettempdir(), f'file_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md')
+            with open(analysis_file, 'w', encoding='utf-8') as f:
+                f.write(output)
+            logger.info(f'Analysis saved to: {analysis_file}')
+        except:
+            logger.warning('Could not save analysis file - continuing without saving')
         
         # Convert to HTML
         html_content = markdown.markdown(output, extensions=['tables', 'fenced_code'])
@@ -154,8 +162,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == '__main__':
-    # Create logs directory only (uploads uses temp)
-    os.makedirs('logs', exist_ok=True)
-    
+    # No need to create directories - using temp for everything
     # Run in development mode
     app.run(debug=False, host='0.0.0.0', port=5000)
