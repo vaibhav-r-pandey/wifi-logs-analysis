@@ -80,6 +80,11 @@ client = None
 
 def list_available_models():
     try:
+        # Get fresh token and create client
+        token = Gpt4ifx_get_Bearertoken()
+        headers = {'Authorization': f"Bearer {token}", "accept": "application/json", "Content-Type": "application/json"}
+        client = openai.OpenAI(api_key=token, base_url='https://gpt4ifx.icp.infineon.com', default_headers=headers, http_client=httpx.Client(verify=False))
+        
         models = client.models.list()
         print("Available models:")
         for model in models.data:
@@ -113,15 +118,37 @@ def test_chat_completion_api(input_logs):
                     http_client = httpx.Client(verify=cert_path if cert_path else False)   
                     )
         
-        model = 'llama3.3-70b'  # Fixed model name
-        user_message = input_logs       
-        completion = client.chat.completions.create(     
-                        model=model,     
-                        messages=[{"role": "user", "content": user_message}],     
-                        max_tokens=2048,     
-                        stream=False,     
-                        temperature=0.7,       
-                    )   
-        return completion.choices[0].message.content
+        # Try different model names that might work
+        model_names = [
+            'llama3.3-70b',
+            'llama-3.3-70b', 
+            'meta-llama/Llama-3.3-70B',
+            'llama3.1-70b',
+            'llama-3.1-70b',
+            'llama3-70b',
+            'gpt-4'
+        ]
+        
+        last_error = None
+        for model in model_names:
+            try:
+                print(f"Trying model: {model}")
+                completion = client.chat.completions.create(     
+                            model=model,     
+                            messages=[{"role": "user", "content": input_logs}],     
+                            max_tokens=2048,     
+                            stream=False,     
+                            temperature=0.7,       
+                        )   
+                print(f"Success with model: {model}")
+                return completion.choices[0].message.content
+            except Exception as e:
+                print(f"Model {model} failed: {str(e)}")
+                last_error = e
+                continue
+        
+        # If all models failed, raise the last error
+        raise Exception(f"All models failed. Last error: {str(last_error)}")
+        
     except Exception as e:
         raise Exception(f"AI API call failed: {str(e)}")
