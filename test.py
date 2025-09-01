@@ -113,7 +113,7 @@ def test_chat_completion_api(input_logs):
                     http_client = httpx.Client(verify=cert_path if cert_path else False)   
                     )
         
-        model = configur.get('gpt4ifxapi', 'model', fallback='llama3-70b')
+        model = 'llama3.3-70b'  # Fixed model name
         user_message = input_logs       
         completion = client.chat.completions.create(     
                         model=model,     
