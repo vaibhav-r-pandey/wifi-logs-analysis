@@ -120,8 +120,13 @@ def handle_file_upload():
         
         logger.info(f'File uploaded to temp: {filename}')
         
+        # Limit input size to prevent timeouts
+        if len(file_content) > 20000:
+            file_content = file_content[-20000:]  # Keep last 20k chars
+            logger.info('Large file truncated to prevent timeout')
+        
         # Prepare prompt for analysis
-        test_prompt = '\nYou are given a log file for analysis. Go through the logs and provide a detailed analysis of any issues, errors, or patterns you find. Please provide debugging recommendations and highlight critical issues.'
+        test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
         analysis_input = file_content + test_prompt
         
         # Get analysis from AI
