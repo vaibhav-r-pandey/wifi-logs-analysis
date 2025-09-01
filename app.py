@@ -124,6 +124,12 @@ def handle_file_upload():
         test_prompt = '\nYou are given a log file for analysis. Go through the logs and provide a detailed analysis of any issues, errors, or patterns you find. Please provide debugging recommendations and highlight critical issues.'
         analysis_input = file_content + test_prompt
         
+        # Truncate input if too long to speed up processing
+        max_input_length = 30000  # Limit input size
+        if len(analysis_input) > max_input_length:
+            analysis_input = analysis_input[-max_input_length:]  # Keep last 30k chars
+            logger.info(f'Input truncated to {max_input_length} characters')
+        
         # Get analysis from AI
         output = test.test_chat_completion_api(analysis_input)
         
