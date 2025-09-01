@@ -22,31 +22,43 @@ if not config_loaded:
     print("Available files:", [f for f in os.listdir('.') if f.endswith('.ini')])
     raise Exception("No valid config file found. Please create config.ini from config_template.ini")
 
-# Get config values with fallbacks
-Gpt4ifxUname = configur.get('gpt4ifxapi', 'username', fallback=os.getenv('GPT4IFX_USERNAME', ''))
-Gpt4ifxPassword = configur.get('gpt4ifxapi', 'password', fallback=os.getenv('GPT4IFX_PASSWORD', ''))
+# Get config values with fallbacks - prioritize environment variables
+Gpt4ifxUname = os.getenv('GPT4IFX_USERNAME') or configur.get('gpt4ifxapi', 'username', fallback='')
+Gpt4ifxPassword = os.getenv('GPT4IFX_PASSWORD') or configur.get('gpt4ifxapi', 'password', fallback='')
 Gpt4ifxchatUrl = configur.get('gpt4ifxapi', 'chaturl', fallback='https://gpt4ifx.icp.infineon.com')
 Gpt4ifxBearertoken = configur.get('gpt4ifxapi', 'bearertoken', fallback='')
 Gpt4ifxUrlBearertoken = configur.get('gpt4ifxapi', 'url_bearertoken', fallback='https://gpt4ifx.icp.infineon.com/auth/token')
 
-print(f"Config loaded - Username: {Gpt4ifxUname[:3]}*** (masked)")
+print(f"Config loaded - Username: '{Gpt4ifxUname[:3]}***' (length: {len(Gpt4ifxUname)})")
+print(f"Password configured: {'Yes' if Gpt4ifxPassword else 'No'} (length: {len(Gpt4ifxPassword) if Gpt4ifxPassword else 0})")
 print(f"Token URL: {Gpt4ifxUrlBearertoken}")
+print(f"Environment GPT4IFX_USERNAME: {os.getenv('GPT4IFX_USERNAME', 'Not set')}")
+print(f"Environment GPT4IFX_PASSWORD: {'Set' if os.getenv('GPT4IFX_PASSWORD') else 'Not set'}")
 
 def Gpt4ifx_get_Bearertoken():
     if not Gpt4ifxUname or not Gpt4ifxPassword:
         raise Exception("Username and password must be configured in config.ini or environment variables")
     
     print(f"Attempting to get token for user: {Gpt4ifxUname}")
+    print(f"Using URL: {Gpt4ifxUrlBearertoken}")
     
     try:
-        basic = HTTPBasicAuth(Gpt4ifxUname, Gpt4ifxPassword)
-        response = requests.get(Gpt4ifxUrlBearertoken, auth=basic, verify=False, timeout=30)
+        basic = HTTPBasicAuth(Gpt4ifxUname.strip(), Gpt4ifxPassword.strip())
+        
+        # Add headers that might be required
+        headers = {
+            'User-Agent': 'IFX-MSD-GenAI-Tool/1.0',
+            'Accept': 'application/json'
+        }
+        
+        response = requests.get(Gpt4ifxUrlBearertoken, auth=basic, headers=headers, verify=False, timeout=30)
         
         print(f"Token request status: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
         
         if response.status_code == 200:
             token = response.text.strip()
-            print("Token obtained successfully")
+            print(f"Token obtained successfully (length: {len(token)})")
             # Update config if possible
             if os.path.exists('config.ini'):
                 configur.set('gpt4ifxapi','bearertoken', token)
@@ -54,7 +66,8 @@ def Gpt4ifx_get_Bearertoken():
                     configur.write(f)
             return token
         elif response.status_code == 401:
-            raise Exception(f"Authentication failed. Please check username/password. Response: {response.text}")
+            print(f"Auth failed - Username: '{Gpt4ifxUname}', Password length: {len(Gpt4ifxPassword)}")
+            raise Exception(f"Authentication failed. Check credentials in HICP environment variables. Response: {response.text}")
         else:
             raise Exception(f"Failed to get bearer token. Status: {response.status_code}, Response: {response.text}")
     except requests.exceptions.RequestException as e:
