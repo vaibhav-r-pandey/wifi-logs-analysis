@@ -93,6 +93,7 @@ def handle_post():
 # Handle file upload and analysis
 @app.route('/handle_file_upload', methods=['POST'])
 def handle_file_upload():
+    logger.info('File upload request received')
     try:
         if 'logfile' not in request.files:
             logger.warning('No file in request')
@@ -129,8 +130,14 @@ def handle_file_upload():
         test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
         analysis_input = file_content + test_prompt
         
-        # Get analysis from AI
-        output = test.test_chat_completion_api(analysis_input)
+        # Get analysis from AI with timeout protection
+        logger.info('Starting AI analysis')
+        try:
+            output = test.test_chat_completion_api(analysis_input)
+            logger.info('AI analysis completed successfully')
+        except Exception as ai_error:
+            logger.error(f'AI analysis failed: {str(ai_error)}')
+            output = f"Analysis failed: {str(ai_error)}. Please try with a smaller file or check your credentials."
         
         # Save analysis to temp file (optional - for debugging)
         try:

@@ -154,7 +154,7 @@ def test_chat_completion_api(input_logs):
                 completion = client.chat.completions.create(     
                             model=model,     
                             messages=[{"role": "user", "content": input_logs}],     
-                            max_tokens=2048,     
+                            max_tokens=800,     
                             stream=False,     
                             temperature=0.7,       
                         )   
