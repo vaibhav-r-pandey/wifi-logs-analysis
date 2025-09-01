@@ -154,10 +154,9 @@ def test_chat_completion_api(input_logs):
                 completion = client.chat.completions.create(     
                             model=model,     
                             messages=[{"role": "user", "content": input_logs}],     
-                            max_tokens=1024,     
+                            max_tokens=2048,     
                             stream=False,     
-                            temperature=0.7,
-                            timeout=90       
+                            temperature=0.7,       
                         )   
                 print(f"Success with model: {model}")
                 return completion.choices[0].message.content
