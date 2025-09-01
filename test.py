@@ -6,7 +6,7 @@ import requests
 import os
 
 configur = ConfigParser()
-configur.read('config.ini')
+configur.read('config_template.ini')
 
 Gpt4ifxUname = configur.get('gpt4ifxapi','username')
 Gpt4ifxPassword = configur.get('gpt4ifxapi','password')
