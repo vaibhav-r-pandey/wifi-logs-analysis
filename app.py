@@ -9,6 +9,7 @@ import markdown
 import logs_analysis_genai
 import os
 import logging
+import tempfile
 from werkzeug.utils import secure_filename
 import test
 from datetime import datetime
@@ -22,7 +23,7 @@ app = Flask(__name__)
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()  # Use system temp directory
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'log', 'txt', 'md', 'dmesg'}
@@ -105,15 +106,15 @@ def handle_file_upload():
                                  timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
-        # Save uploaded file
-        file.save(filepath)
-        logger.info(f'File uploaded: {filename}')
+        # Use temporary file to avoid permission issues
+        with tempfile.NamedTemporaryFile(mode='w+', suffix=f'_{filename}', delete=False) as temp_file:
+            # Save file content to temp file
+            file_content = file.read().decode('utf-8', errors='ignore')
+            temp_file.write(file_content)
+            temp_filepath = temp_file.name
         
-        # Read and analyze the file
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            file_content = f.read()
+        logger.info(f'File uploaded to temp: {filename}')
         
         # Prepare prompt for analysis
         test_prompt = '\nYou are given a log file for analysis. Go through the logs and provide a detailed analysis of any issues, errors, or patterns you find. Please provide debugging recommendations and highlight critical issues.'
@@ -130,8 +131,11 @@ def handle_file_upload():
         # Convert to HTML
         html_content = markdown.markdown(output, extensions=['tables', 'fenced_code'])
         
-        # Clean up uploaded file
-        os.remove(filepath)
+        # Clean up temp file
+        try:
+            os.remove(temp_filepath)
+        except:
+            pass  # Ignore cleanup errors
         logger.info(f'Analysis completed for: {filename}')
         
         return render_template('results.html', 
@@ -150,8 +154,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 if __name__ == '__main__':
-    # Create necessary directories
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # Create logs directory only (uploads uses temp)
     os.makedirs('logs', exist_ok=True)
     
     # Run in development mode

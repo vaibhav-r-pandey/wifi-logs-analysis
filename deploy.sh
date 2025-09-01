@@ -5,7 +5,7 @@
 echo "Starting deployment to HICP server..."
 
 # Create necessary directories
-mkdir -p uploads logs
+mkdir -p logs
 
 # Copy config template if config.ini doesn't exist
 if [ ! -f "config.ini" ]; then
@@ -29,7 +29,7 @@ pip3 install -r requirements.txt
 
 # Set permissions
 chmod +x wsgi.py
-chmod 755 uploads logs
+chmod 755 logs
 
 # Create systemd service file (optional)
 cat > ifx-msd-genai.service << EOF
