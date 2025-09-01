@@ -5,37 +5,53 @@ from configparser import ConfigParser
 import requests
 import os
 
-# Initialize config with error handling
-configur = ConfigParser()
-config_files = ['config.ini', 'config_template.ini']
-config_loaded = False
+# Global variables - will be initialized when needed
+configur = None
+Gpt4ifxUname = None
+Gpt4ifxPassword = None
+Gpt4ifxchatUrl = None
+Gpt4ifxBearertoken = None
+Gpt4ifxUrlBearertoken = None
 
-for config_file in config_files:
-    if os.path.exists(config_file):
-        configur.read(config_file)
-        if configur.has_section('gpt4ifxapi'):
-            config_loaded = True
-            break
+def init_config():
+    global configur, Gpt4ifxUname, Gpt4ifxPassword, Gpt4ifxchatUrl, Gpt4ifxBearertoken, Gpt4ifxUrlBearertoken
+    
+    if configur is not None:
+        return  # Already initialized
+    
+    # Initialize config with error handling
+    configur = ConfigParser()
+    config_files = ['config.ini', 'config_template.ini']
+    config_loaded = False
 
-if not config_loaded:
-    print("ERROR: No valid config file found")
-    print("Available files:", [f for f in os.listdir('.') if f.endswith('.ini')])
-    raise Exception("No valid config file found. Please create config.ini from config_template.ini")
+    for config_file in config_files:
+        if os.path.exists(config_file):
+            configur.read(config_file)
+            if configur.has_section('gpt4ifxapi'):
+                config_loaded = True
+                break
 
-# Get config values with fallbacks - prioritize environment variables
-Gpt4ifxUname = os.getenv('GPT4IFX_USERNAME') or configur.get('gpt4ifxapi', 'username', fallback='')
-Gpt4ifxPassword = os.getenv('GPT4IFX_PASSWORD') or configur.get('gpt4ifxapi', 'password', fallback='')
-Gpt4ifxchatUrl = configur.get('gpt4ifxapi', 'chaturl', fallback='https://gpt4ifx.icp.infineon.com')
-Gpt4ifxBearertoken = configur.get('gpt4ifxapi', 'bearertoken', fallback='')
-Gpt4ifxUrlBearertoken = configur.get('gpt4ifxapi', 'url_bearertoken', fallback='https://gpt4ifx.icp.infineon.com/auth/token')
+    if not config_loaded:
+        print("ERROR: No valid config file found")
+        print("Available files:", [f for f in os.listdir('.') if f.endswith('.ini')])
+        raise Exception("No valid config file found. Please create config.ini from config_template.ini")
 
-print(f"Config loaded - Username: '{Gpt4ifxUname[:3]}***' (length: {len(Gpt4ifxUname)})")
-print(f"Password configured: {'Yes' if Gpt4ifxPassword else 'No'} (length: {len(Gpt4ifxPassword) if Gpt4ifxPassword else 0})")
-print(f"Token URL: {Gpt4ifxUrlBearertoken}")
-print(f"Environment GPT4IFX_USERNAME: {os.getenv('GPT4IFX_USERNAME', 'Not set')}")
-print(f"Environment GPT4IFX_PASSWORD: {'Set' if os.getenv('GPT4IFX_PASSWORD') else 'Not set'}")
+    # Get config values with fallbacks - prioritize environment variables
+    Gpt4ifxUname = os.getenv('GPT4IFX_USERNAME') or configur.get('gpt4ifxapi', 'username', fallback='')
+    Gpt4ifxPassword = os.getenv('GPT4IFX_PASSWORD') or configur.get('gpt4ifxapi', 'password', fallback='')
+    Gpt4ifxchatUrl = configur.get('gpt4ifxapi', 'chaturl', fallback='https://gpt4ifx.icp.infineon.com')
+    Gpt4ifxBearertoken = configur.get('gpt4ifxapi', 'bearertoken', fallback='')
+    Gpt4ifxUrlBearertoken = configur.get('gpt4ifxapi', 'url_bearertoken', fallback='https://gpt4ifx.icp.infineon.com/auth/token')
+
+    print(f"Config loaded - Username: '{Gpt4ifxUname[:3]}***' (length: {len(Gpt4ifxUname)})")
+    print(f"Password configured: {'Yes' if Gpt4ifxPassword else 'No'} (length: {len(Gpt4ifxPassword) if Gpt4ifxPassword else 0})")
+    print(f"Token URL: {Gpt4ifxUrlBearertoken}")
+    print(f"Environment GPT4IFX_USERNAME: {os.getenv('GPT4IFX_USERNAME', 'Not set')}")
+    print(f"Environment GPT4IFX_PASSWORD: {'Set' if os.getenv('GPT4IFX_PASSWORD') else 'Not set'}")
 
 def Gpt4ifx_get_Bearertoken():
+    init_config()  # Initialize config if not done
+    
     if not Gpt4ifxUname or not Gpt4ifxPassword:
         raise Exception("Username and password must be configured in config.ini or environment variables")
     
@@ -80,6 +96,7 @@ client = None
 
 def list_available_models():
     try:
+        init_config()  # Initialize config if not done
         # Get fresh token and create client
         token = Gpt4ifx_get_Bearertoken()
         headers = {'Authorization': f"Bearer {token}", "accept": "application/json", "Content-Type": "application/json"}
@@ -96,6 +113,7 @@ def list_available_models():
 
 def test_chat_completion_api(input_logs):
     try:
+        init_config()  # Initialize config if not done
         # Get certificate path or disable SSL verification
         cert_path = None
         if os.path.exists('ca-bundle.crt'):
