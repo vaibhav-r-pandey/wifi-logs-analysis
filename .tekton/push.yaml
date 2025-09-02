@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: wifi-logs-analysis-push
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+spec:
+  pipelineRef:
+    name: python-build-deploy
+  params:
+    - name: APP_NAME
+      value: wifi-logs-analysis
+    - name: SOURCE_URL
+      value: https://github.com/vaibhav-r-pandey/wifi-logs-analysis.git
+    - name: SOURCE_REVISION
+      value: main
+    - name: PYTHON_VERSION
+      value: "3.10"
+    - name: BUILD_ARGS
+      value: |
+        --build-arg PYTHON_VERSION=3.10
+    - name: ENV_VARS
+      value: |
+        GPT4IFX_USERNAME=$(params.GPT4IFX_USERNAME)
+        GPT4IFX_PASSWORD=$(params.GPT4IFX_PASSWORD)
+        FLASK_ENV=production
+    - name: START_COMMAND
+      value: "python3 app.py"
+    - name: PORT
+      value: "5000"
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
