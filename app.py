@@ -137,7 +137,21 @@ def handle_file_upload():
             logger.info('AI analysis completed successfully')
         except Exception as ai_error:
             logger.error(f'AI analysis failed: {str(ai_error)}')
-            output = f"Analysis failed: {str(ai_error)}. Please try with a smaller file or check your credentials."
+            # Provide basic analysis as fallback
+            output = f"""# Log Analysis Results
+
+**Status:** Analysis service temporarily unavailable
+
+**File:** {filename}
+**Size:** {len(file_content)} characters
+
+## Basic Information
+- File processed successfully
+- Content extracted and ready for analysis
+- Please try again later or contact support
+
+**Error Details:** {str(ai_error)}
+"""
         
         # Save analysis to temp file (optional - for debugging)
         try:

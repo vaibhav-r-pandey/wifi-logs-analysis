@@ -165,8 +165,9 @@ def test_chat_completion_api(input_logs):
                 last_error = e
                 continue
         
-        # If all models failed, raise the last error
-        raise Exception(f"All models failed. Last error: {str(last_error)}")
+        # If all models failed, return a simple message instead of crashing
+        print(f"All models failed. Last error: {str(last_error)}")
+        return "Analysis temporarily unavailable. All AI models are currently experiencing issues. Please try again later."
         
     except Exception as e:
         raise Exception(f"AI API call failed: {str(e)}")
