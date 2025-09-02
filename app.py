@@ -4,7 +4,7 @@ IFX MSD GenAI Tool - Flask Application
 AI-powered log analysis for MSD cases
 """
 
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, jsonify
 import markdown
 import logs_analysis_genai
 import os
@@ -13,6 +13,9 @@ import tempfile
 from werkzeug.utils import secure_filename
 import test
 from datetime import datetime
+import uuid
+import threading
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +30,9 @@ app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()  # Use system temp directory
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'log', 'txt', 'md', 'dmesg'}
+
+# In-memory job storage
+jobs = {}
   
 # To render a Index Page 
 @app.route('/')
@@ -90,7 +96,7 @@ def handle_post():
                              analysis_type='Error',
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
  
-# Handle file upload and analysis
+# Handle file upload and start async analysis
 @app.route('/handle_file_upload', methods=['POST'])
 def handle_file_upload():
     logger.info('File upload request received')
@@ -111,77 +117,96 @@ def handle_file_upload():
                                  timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         
         filename = secure_filename(file.filename)
+        file_content = file.read().decode('utf-8', errors='ignore')
         
-        # Use temporary file to avoid permission issues
-        with tempfile.NamedTemporaryFile(mode='w+', suffix=f'_{filename}', delete=False) as temp_file:
-            # Save file content to temp file
-            file_content = file.read().decode('utf-8', errors='ignore')
-            temp_file.write(file_content)
-            temp_filepath = temp_file.name
+        # Start async analysis
+        job_id = start_analysis_job(filename, file_content)
         
-        logger.info(f'File uploaded to temp: {filename}')
-        
-        # Limit input size to prevent timeouts
-        if len(file_content) > 20000:
-            file_content = file_content[-20000:]  # Keep last 20k chars
-            logger.info('Large file truncated to prevent timeout')
-        
-        # Prepare prompt for analysis
-        test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
-        analysis_input = file_content + test_prompt
-        
-        # Get analysis from AI with timeout protection
-        logger.info('Starting AI analysis')
-        try:
-            output = test.test_chat_completion_api(analysis_input)
-            logger.info('AI analysis completed successfully')
-        except Exception as ai_error:
-            logger.error(f'AI analysis failed: {str(ai_error)}')
-            # Provide basic analysis as fallback
-            output = f"""# Log Analysis Results
-
-**Status:** Analysis service temporarily unavailable
-
-**File:** {filename}
-**Size:** {len(file_content)} characters
-
-## Basic Information
-- File processed successfully
-- Content extracted and ready for analysis
-- Please try again later or contact support
-
-**Error Details:** {str(ai_error)}
-"""
-        
-        # Save analysis to temp file (optional - for debugging)
-        try:
-            analysis_file = os.path.join(tempfile.gettempdir(), f'file_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.md')
-            with open(analysis_file, 'w', encoding='utf-8') as f:
-                f.write(output)
-            logger.info(f'Analysis saved to: {analysis_file}')
-        except:
-            logger.warning('Could not save analysis file - continuing without saving')
-        
-        # Convert to HTML
-        html_content = markdown.markdown(output, extensions=['tables', 'fenced_code'])
-        
-        # Clean up temp file
-        try:
-            os.remove(temp_filepath)
-        except:
-            pass  # Ignore cleanup errors
-        logger.info(f'Analysis completed for: {filename}')
-        
-        return render_template('results.html', 
-                             analysis_html=html_content,
-                             analysis_type=f'File Analysis ({filename})',
-                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        # Return processing page with job ID
+        return render_template('processing.html', job_id=job_id, filename=filename)
         
     except Exception as e:
         logger.error(f'Error in file upload: {str(e)}')
         return render_template('results.html', 
                              analysis_html=f'<p>Error analyzing file: {str(e)}</p>',
                              analysis_type='Error',
+                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+def start_analysis_job(filename, file_content):
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {
+        "status": "processing", 
+        "result": None, 
+        "filename": filename,
+        "started": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    
+    # Start background processing
+    thread = threading.Thread(target=process_analysis, args=(job_id, filename, file_content))
+    thread.daemon = True
+    thread.start()
+    
+    return job_id
+
+def process_analysis(job_id, filename, file_content):
+    try:
+        logger.info(f'Starting background analysis for job {job_id}')
+        
+        # Limit input size
+        if len(file_content) > 20000:
+            file_content = file_content[-20000:]
+        
+        # Prepare prompt
+        test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
+        analysis_input = file_content + test_prompt
+        
+        # Get AI analysis
+        output = test.test_chat_completion_api(analysis_input)
+        
+        # Convert to HTML
+        html_content = markdown.markdown(output, extensions=['tables', 'fenced_code'])
+        
+        jobs[job_id] = {
+            "status": "complete", 
+            "result": html_content, 
+            "filename": filename,
+            "completed": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        logger.info(f'Analysis completed for job {job_id}')
+        
+    except Exception as e:
+        logger.error(f'Analysis failed for job {job_id}: {str(e)}')
+        jobs[job_id] = {
+            "status": "error", 
+            "result": f"Analysis failed: {str(e)}", 
+            "filename": filename,
+            "error": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+@app.route('/job_status/<job_id>')
+def job_status(job_id):
+    job = jobs.get(job_id, {"status": "not_found"})
+    return jsonify(job)
+
+@app.route('/results/<job_id>')
+def view_results(job_id):
+    job = jobs.get(job_id)
+    if not job:
+        return render_template('results.html', 
+                             analysis_html='<p>Job not found.</p>',
+                             analysis_type='Error',
+                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    
+    if job['status'] == 'complete':
+        return render_template('results.html', 
+                             analysis_html=job['result'],
+                             analysis_type=f'File Analysis ({job["filename"]})',
+                             timestamp=job.get('completed', 'Unknown'))
+    else:
+        return render_template('results.html', 
+                             analysis_html=f'<p>Analysis {job["status"]}: {job.get("result", "Please wait...")}</p>',
+                             analysis_type='Status',
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
 def allowed_file(filename):

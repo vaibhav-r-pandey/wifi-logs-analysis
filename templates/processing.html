@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processing Analysis - IFX MSD GenAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(102, 126, 234, 0.3);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .filename {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .progress-text {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .back-button {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Processing Analysis</h1>
+            <p>AI-powered log analysis in progress</p>
+        </div>
+        
+        <div class="content">
+            <div class="spinner"></div>
+            
+            <div class="status" id="status">Analyzing your log file...</div>
+            
+            <div class="filename">
+                <strong>File:</strong> {{ filename }}
+            </div>
+            
+            <div class="progress-text" id="progress">
+                Please wait while our AI analyzes your log file. This may take a few minutes.
+            </div>
+            
+            <a href="/" class="back-button">← Upload Another File</a>
+        </div>
+    </div>
+    
+    <script>
+        const jobId = '{{ job_id }}';
+        
+        function checkStatus() {
+            fetch(`/job_status/${jobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const statusEl = document.getElementById('status');
+                    const progressEl = document.getElementById('progress');
+                    
+                    if (data.status === 'complete') {
+                        window.location.href = `/results/${jobId}`;
+                    } else if (data.status === 'error') {
+                        statusEl.textContent = 'Analysis failed';
+                        progressEl.innerHTML = `Error: ${data.result}<br><a href="/">Try again</a>`;
+                    } else if (data.status === 'processing') {
+                        statusEl.textContent = 'Analysis in progress...';
+                        progressEl.textContent = 'AI is analyzing your log file. Please wait...';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking status:', error);
+                });
+        }
+        
+        // Check status every 3 seconds
+        setInterval(checkStatus, 3000);
+        
+        // Check immediately
+        checkStatus();
+    </script>
+</body>
+</html>
