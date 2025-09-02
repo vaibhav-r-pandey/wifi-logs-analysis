@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
@@ -38,3 +39,80 @@ spec:
           resources:
             requests:
               storage: 1Gi
+=======
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: docker-build-and-deploy-pr
+spec:
+  params:
+    - name: IMAGE_NAME
+      type: string
+    - name: GIT_REPO
+      type: string
+    - name: GIT_REVISION
+      type: string
+  workspaces:
+    - name: workspace
+  tasks:
+    - name: fetch-repository
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: git-clone
+        - name: namespace
+          value: openshift-pipelines
+      workspaces:
+        - name: output
+          workspace: workspace
+      params:
+        - name: URL
+          value: $(params.GIT_REPO)
+        - name: REVISION
+          value: $(params.GIT_REVISION)
+        - name: SUBDIRECTORY
+          value: ""
+        - name: DELETE_EXISTING
+          value: "true"
+
+    - name: build
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: buildah
+        - name: namespace
+          value: openshift-pipelines
+      runAfter:
+        - fetch-repository
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME)
+        - name: TLS_VERIFY
+          value: "false"
+
+    - name: deploy
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: openshift-client
+        - name: namespace
+          value: openshift-pipelines
+      runAfter:
+        - build
+      params:
+      - name: SCRIPT
+        value: |
+          oc new-app --docker-image $(params.IMAGE_NAME)
+>>>>>>> b51a4ae8cb72908ebfebb59f6d1313c498ba2170
