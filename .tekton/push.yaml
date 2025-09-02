@@ -19,7 +19,7 @@ spec:
       value: "3.10"
     - name: BUILD_ARGS
       value: |
-        --build-arg PYTHON_VERSION=3.10
+        --build-arg PYTHON_VERSION=3.11
     - name: ENV_VARS
       value: |
         GPT4IFX_USERNAME=$(params.GPT4IFX_USERNAME)
