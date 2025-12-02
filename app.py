@@ -173,9 +173,9 @@ def process_analysis(job_id, filename, file_content, log_type='WiFi'):
         
         # Prepare different prompts based on log type
         if log_type == 'WiFi':
-            test_prompt = '''\n\nAnalyze this log file and provide key issues and recommendations'''
+            test_prompt = '''\n\nAnalyze this WiFi log file and provide key issues and recommendations'''
         elif log_type == 'BT':
-            test_prompt = '''\n\nAnalyze this log file and provide key issues and recommendations'''
+            test_prompt = '''\n\nAnalyze this BT log file and provide key issues and recommendations'''
         else:
             test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
         
