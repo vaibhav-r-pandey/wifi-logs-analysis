@@ -194,18 +194,36 @@
             <span>OR</span>
         </div> -->
         
-        <!-- File Upload Form -->
-        <form method="POST" action="{{ url_for('handle_file_upload') }}" enctype="multipart/form-data">
+        <!-- WiFi Log Upload Form -->
+        <form method="POST" action="{{ url_for('handle_wifi_upload') }}" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="logfile">Upload Log File</label>
+                <label for="wifilogfile">Upload WiFi Log File</label>
                 <div class="file-upload">
-                    <input type="file" id="logfile" name="logfile" accept=".log,.txt,.md,.dmesg">
-                    <label for="logfile" class="file-upload-label">
-                        📁 Choose log file to analyze
+                    <input type="file" id="wifilogfile" name="logfile" accept=".log,.txt,.md,.dmesg">
+                    <label for="wifilogfile" class="file-upload-label">
+                        📶 Choose WiFi log file to analyze
                     </label>
                 </div>
             </div>
-            <button type="submit" class="btn">Analyze File</button>
+            <button type="submit" class="btn">Analyze WiFi Log</button>
+        </form>
+        
+        <div class="divider">
+            <span>OR</span>
+        </div>
+        
+        <!-- BT Log Upload Form -->
+        <form method="POST" action="{{ url_for('handle_bt_upload') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="btlogfile">Upload BT Log File</label>
+                <div class="file-upload">
+                    <input type="file" id="btlogfile" name="logfile" accept=".log,.txt,.md,.dmesg">
+                    <label for="btlogfile" class="file-upload-label">
+                        📱 Choose BT log file to analyze
+                    </label>
+                </div>
+            </div>
+            <button type="submit" class="btn">Analyze BT Log</button>
         </form>
     </div>
     
@@ -219,13 +237,22 @@
     </div>
     
     <script>
-        // Update file upload label with selected filename
-        document.getElementById('logfile').addEventListener('change', function(e) {
-            const label = document.querySelector('.file-upload-label');
+        // Update file upload labels with selected filenames
+        document.getElementById('wifilogfile').addEventListener('change', function(e) {
+            const label = document.querySelector('label[for="wifilogfile"].file-upload-label');
             if (e.target.files.length > 0) {
                 label.textContent = `📄 ${e.target.files[0].name}`;
             } else {
-                label.textContent = '📁 Choose log file to analyze';
+                label.textContent = '📶 Choose WiFi log file to analyze';
+            }
+        });
+        
+        document.getElementById('btlogfile').addEventListener('change', function(e) {
+            const label = document.querySelector('label[for="btlogfile"].file-upload-label');
+            if (e.target.files.length > 0) {
+                label.textContent = `📄 ${e.target.files[0].name}`;
+            } else {
+                label.textContent = '📱 Choose BT log file to analyze';
             }
         });
         

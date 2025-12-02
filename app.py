@@ -96,10 +96,19 @@ def handle_post():
                              analysis_type='Error',
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
  
-# Handle file upload and start async analysis
-@app.route('/handle_file_upload', methods=['POST'])
-def handle_file_upload():
-    logger.info('File upload request received')
+# Handle WiFi log upload and start async analysis
+@app.route('/handle_wifi_upload', methods=['POST'])
+def handle_wifi_upload():
+    return handle_log_upload('WiFi')
+
+# Handle BT log upload and start async analysis
+@app.route('/handle_bt_upload', methods=['POST'])
+def handle_bt_upload():
+    return handle_log_upload('BT')
+
+# Generic log upload handler
+def handle_log_upload(log_type):
+    logger.info(f'{log_type} log upload request received')
     try:
         if 'logfile' not in request.files:
             logger.warning('No file in request')
@@ -112,52 +121,81 @@ def handle_file_upload():
         if file.filename == '' or not allowed_file(file.filename):
             logger.warning(f'Invalid file: {file.filename}')
             return render_template('results.html', 
-                                 analysis_html='<p>Please select a valid log file (.log, .txt, .md, .dmesg).</p>',
+                                 analysis_html=f'<p>Please select a valid {log_type} log file (.log, .txt, .md, .dmesg).</p>',
                                  analysis_type='Error',
                                  timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         
         filename = secure_filename(file.filename)
         file_content = file.read().decode('utf-8', errors='ignore')
         
-        # Start async analysis
-        job_id = start_analysis_job(filename, file_content)
+        # Start async analysis with log type
+        job_id = start_analysis_job(filename, file_content, log_type)
         
         # Return processing page with job ID
         return render_template('processing.html', job_id=job_id, filename=filename)
         
     except Exception as e:
-        logger.error(f'Error in file upload: {str(e)}')
+        logger.error(f'Error in {log_type} log upload: {str(e)}')
         return render_template('results.html', 
-                             analysis_html=f'<p>Error analyzing file: {str(e)}</p>',
+                             analysis_html=f'<p>Error analyzing {log_type} log file: {str(e)}</p>',
                              analysis_type='Error',
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-def start_analysis_job(filename, file_content):
+# Keep the old route for backward compatibility
+@app.route('/handle_file_upload', methods=['POST'])
+def handle_file_upload():
+    return handle_log_upload('WiFi')  # Default to WiFi for backward compatibility
+
+def start_analysis_job(filename, file_content, log_type='WiFi'):
     job_id = str(uuid.uuid4())
     jobs[job_id] = {
         "status": "processing", 
         "result": None, 
         "filename": filename,
+        "log_type": log_type,
         "started": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
     
     # Start background processing
-    thread = threading.Thread(target=process_analysis, args=(job_id, filename, file_content))
+    thread = threading.Thread(target=process_analysis, args=(job_id, filename, file_content, log_type))
     thread.daemon = True
     thread.start()
     
     return job_id
 
-def process_analysis(job_id, filename, file_content):
+def process_analysis(job_id, filename, file_content, log_type='WiFi'):
     try:
-        logger.info(f'Starting background analysis for job {job_id}')
+        logger.info(f'Starting background {log_type} analysis for job {job_id}')
         
         # Limit input size
         if len(file_content) > 20000:
             file_content = file_content[-20000:]
         
-        # Prepare prompt
-        test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
+        # Prepare different prompts based on log type
+        if log_type == 'WiFi':
+            test_prompt = '''\n\nAnalyze this WiFi log file and provide:
+1. **Connection Issues**: Identify WiFi connection problems, authentication failures, signal strength issues
+2. **Network Performance**: Analyze throughput, latency, packet loss, roaming behavior
+3. **Security Analysis**: Check for security protocol issues, encryption problems, certificate errors
+4. **Driver/Hardware Issues**: Identify driver crashes, hardware failures, power management issues
+5. **Configuration Problems**: Detect misconfigured settings, profile issues, DNS problems
+6. **Recommendations**: Provide specific actionable solutions for identified issues
+
+Focus on WiFi-specific technical details and provide clear explanations for each finding.'''
+        elif log_type == 'BT':
+            test_prompt = '''\n\nAnalyze this Bluetooth log file and provide:
+1. **Pairing Issues**: Identify Bluetooth pairing failures, authentication problems, bonding issues
+2. **Connection Stability**: Analyze connection drops, reconnection attempts, link quality
+3. **Protocol Analysis**: Check for protocol errors, profile compatibility issues, version mismatches
+4. **Audio/Data Transfer**: Identify audio quality issues, data transfer problems, codec issues
+5. **Power Management**: Analyze power-related issues, sleep/wake problems, battery optimization
+6. **Device Compatibility**: Check for device-specific issues, manufacturer compatibility problems
+7. **Recommendations**: Provide specific actionable solutions for Bluetooth connectivity issues
+
+Focus on Bluetooth-specific technical details and provide clear explanations for each finding.'''
+        else:
+            test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
+        
         analysis_input = file_content + test_prompt
         
         # Get AI analysis
@@ -170,17 +208,19 @@ def process_analysis(job_id, filename, file_content):
             "status": "complete", 
             "result": html_content, 
             "filename": filename,
+            "log_type": log_type,
             "completed": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         
-        logger.info(f'Analysis completed for job {job_id}')
+        logger.info(f'{log_type} analysis completed for job {job_id}')
         
     except Exception as e:
-        logger.error(f'Analysis failed for job {job_id}: {str(e)}')
+        logger.error(f'{log_type} analysis failed for job {job_id}: {str(e)}')
         jobs[job_id] = {
             "status": "error", 
-            "result": f"Analysis failed: {str(e)}", 
+            "result": f"{log_type} analysis failed: {str(e)}", 
             "filename": filename,
+            "log_type": log_type,
             "error": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
@@ -199,9 +239,10 @@ def view_results(job_id):
                              timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     
     if job['status'] == 'complete':
+        log_type = job.get('log_type', 'Log')
         return render_template('results.html', 
                              analysis_html=job['result'],
-                             analysis_type=f'File Analysis ({job["filename"]})',
+                             analysis_type=f'{log_type} Log Analysis ({job["filename"]})',
                              timestamp=job.get('completed', 'Unknown'))
     else:
         return render_template('results.html', 

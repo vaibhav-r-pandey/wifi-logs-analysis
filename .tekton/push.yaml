@@ -18,13 +18,9 @@ spec:
     - name: PYTHON_VERSION
       value: "3.10"
     - name: BUILD_ARGS
-      value: |
-        --build-arg PYTHON_VERSION=3.11
+      value: "--build-arg PYTHON_VERSION=3.11"
     - name: ENV_VARS
-      value: |
-        GPT4IFX_USERNAME=$(params.GPT4IFX_USERNAME)
-        GPT4IFX_PASSWORD=$(params.GPT4IFX_PASSWORD)
-        FLASK_ENV=production
+      value: "GPT4IFX_USERNAME=$(params.GPT4IFX_USERNAME) GPT4IFX_PASSWORD=$(params.GPT4IFX_PASSWORD) FLASK_ENV=production"
     - name: START_COMMAND
       value: "python3 app.py"
     - name: PORT
