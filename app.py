@@ -173,26 +173,9 @@ def process_analysis(job_id, filename, file_content, log_type='WiFi'):
         
         # Prepare different prompts based on log type
         if log_type == 'WiFi':
-            test_prompt = '''\n\nAnalyze this WiFi log file and provide:
-1. **Connection Issues**: Identify WiFi connection problems, authentication failures, signal strength issues
-2. **Network Performance**: Analyze throughput, latency, packet loss, roaming behavior
-3. **Security Analysis**: Check for security protocol issues, encryption problems, certificate errors
-4. **Driver/Hardware Issues**: Identify driver crashes, hardware failures, power management issues
-5. **Configuration Problems**: Detect misconfigured settings, profile issues, DNS problems
-6. **Recommendations**: Provide specific actionable solutions for identified issues
-
-Focus on WiFi-specific technical details and provide clear explanations for each finding.'''
+            test_prompt = '''\n\nAnalyze this log file and provide key issues and recommendations'''
         elif log_type == 'BT':
-            test_prompt = '''\n\nAnalyze this Bluetooth log file and provide:
-1. **Pairing Issues**: Identify Bluetooth pairing failures, authentication problems, bonding issues
-2. **Connection Stability**: Analyze connection drops, reconnection attempts, link quality
-3. **Protocol Analysis**: Check for protocol errors, profile compatibility issues, version mismatches
-4. **Audio/Data Transfer**: Identify audio quality issues, data transfer problems, codec issues
-5. **Power Management**: Analyze power-related issues, sleep/wake problems, battery optimization
-6. **Device Compatibility**: Check for device-specific issues, manufacturer compatibility problems
-7. **Recommendations**: Provide specific actionable solutions for Bluetooth connectivity issues
-
-Focus on Bluetooth-specific technical details and provide clear explanations for each finding.'''
+            test_prompt = '''\n\nAnalyze this log file and provide key issues and recommendations'''
         else:
             test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
         
