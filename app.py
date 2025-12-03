@@ -175,7 +175,25 @@ def process_analysis(job_id, filename, file_content, log_type='WiFi'):
         if log_type == 'WiFi':
             test_prompt = '''\n\nAnalyze this WiFi log file and provide key issues and recommendations'''
         elif log_type == 'BT':
-            test_prompt = '''\n\nAnalyze this BT log file and provide key issues and recommendations'''
+            test_prompt = '''\n\nFrom the provided Bluetooth log files containing connection attempts, disconnections, error codes, timestamps, and RSSI levels.
+task:
+1. Parse and summarize the key events (connections, failures, interruptions, reconnections) and identify recurring anomalies.
+2. Map any error codes, unusual RSSI variations, or event patterns to possible causes.
+3. Diagnose the most likely root cause(s) in plain language.
+4. Suggest at least 3 diagnostic tests from categories such as:
+Signal stability tests (e.g., checking RSSI at varying distances)
+Interference checks (e.g., switching Wi‑Fi channels, disabling nearby devices)
+Configuration validation (e.g., verifying pairing/authentication settings, MTU size)
+Firmware/software version comparison (e.g., check if issue aligns with recent update)
+5. Propose practical workarounds or mitigations from categories such as:
+Environmental adjustments (e.g., repositioning device to reduce obstacles)
+Protocol/stack settings tweaks (e.g., adjusting connection interval, enabling LE mode)
+Device resets/re-pairing
+Temporary version rollback
+6. Output answer in this format:
+Root Cause Analysis
+Recommended Tests
+Potential Workarounds'''
         else:
             test_prompt = '\nAnalyze this log file and provide key issues and recommendations.'
         
